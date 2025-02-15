@@ -90,15 +90,25 @@ class CropXAI:
                 'base_value': base_value
             }
         }
+    
+    def validate(self, soil, temp, hum):
+        """Validate sensor inputs"""
+        try:
+            return all([
+                0 <= float(soil) <= 1023,
+                -40 <= float(temp) <= 80,
+                0 <= float(hum) <= 100
+            ])
+        except ValueError:
+            return False
 
 if __name__ == "__main__":
     xai = CropXAI()
     if xai.train():
-        test_values = [(83, 24, 72), (73, 28, 71), (79, 25, 87)]
+        test_values = [(83, 24.5, 72), (73, 28.9, 71), (79, 25.2, 87)]
         for soil, temp, hum in test_values:
             result = xai.predict(soil, temp, hum)
             print(f"\nInput: {soil}%, {temp}°C, {hum}%")
             print(f"Prediction: {result['prediction']} ({result['confidence']:.2%})")
-            # Convert np.float64 values to built-in floats
             key_factors = {feat: round(float(val), 4) for feat, val in zip(result['explanation']['features'], result['explanation']['values'])}
             print("Key Factors:", key_factors)
