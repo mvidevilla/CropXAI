@@ -6,7 +6,10 @@ DHT22 Sensor connected to Digital Pin 2
 
 (Schematics uploaded later)
 
+========================================================================================
+
 Uses Gradient Boosting to find patterns in data
+
 Uses SHAP to explain the deviation of input values from average values of training data
 
 Untested
