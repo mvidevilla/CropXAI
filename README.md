@@ -6,5 +6,9 @@ DHT22 Sensor connected to Digital Pin 2
 
 (Schematics uploaded later)
 
+================================================================
+
+Uses Random Forest
+
 Existing Issue:
 Low confidence level: 54% and below
