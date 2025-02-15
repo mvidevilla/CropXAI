@@ -1,4 +1,3 @@
-# main.py
 import serial
 import time
 import pandas as pd
@@ -12,51 +11,63 @@ def main():
         return
     
     try:
-        # Serial connection with timeout
-        with serial.Serial('COM8', 9600, timeout=1) as ser:
-            ser.setDTR(False)
-            time.sleep(1)
-            ser.flushInput()
-            ser.setDTR(True)
-            
-            # Daily data file
-            csv_file = f"{datetime.now().strftime('%Y-%m-%d')}_data.csv"
-            columns = ["Timestamp", "Soil(%)", "Temp(C)", "Humidity(%)", "Prediction"]
-            
-            # Initialize CSV with header
-            if not os.path.exists(csv_file):
-                pd.DataFrame(columns=columns).to_csv(csv_file, index=False)
-            
-            if ser.in_waiting > 0:
-                raw = ser.readline().decode().strip()
-                if len((vals := raw.split(','))) == 3 and system.validate(*vals):
-                    soil, temp, hum = map(float, vals)
-                        
-                    # Get prediction
-                    result = system.predict(soil, temp, hum)
-                        
-                    # Save entry
-                    pd.DataFrame([[
-                        datetime.now().strftime("%H:%M:%S"),
-                        soil,
-                        temp,
-                        hum,
-                        result['prediction']
-                    ]], columns=columns).to_csv(csv_file, mode='a', header=False, index=False)
-                        
-                    # Display results
-                    print(f"\n{'='*40}")
-                    print(f"Recommended: {result['prediction']} ({result['confidence']:.2%})")
-                    print("Key Factors:")
-                    for feat, val in zip(result['explanation']['features'], 
-                                      result['explanation']['values']):
-                        print(f"  {feat}: {val:+.2f}")
-                    print(f"{'='*40}\n")
- 
-    except KeyboardInterrupt:
-        print("\nSystem shutdown initiated...")
+        # Open the serial port once
+        ser = serial.Serial('COM8', 9600, timeout=1)
+        ser.setDTR(False)
+        time.sleep(1)
+        ser.flushInput()
+        ser.setDTR(True)
     except Exception as e:
-        print(f"Critical error: {str(e)}")
+        print("Failed to open serial port:", e)
+        return
+
+    # Define CSV file and columns once
+    csv_file = f"{datetime.now().strftime('%Y-%m-%d')}_data.csv"
+    columns = ["Timestamp", "Soil(%)", "Temp(C)", "Humidity(%)", "Prediction"]
+    if not os.path.exists(csv_file):
+        pd.DataFrame(columns=columns).to_csv(csv_file, index=False)
+    
+    while True:
+        try:
+            # Read from serial
+            s_bytes = ser.readline()
+            if not s_bytes:
+                time.sleep(0.1)
+                continue  # No data received, try again
+            
+            raw = s_bytes.decode('utf-8', errors='ignore').strip()
+            if not raw:
+                continue
+
+            vals = raw.split(',')
+            if len(vals) == 3 and system.validate(*vals):
+                soil, temp, hum = map(float, vals)
+                
+                # Get prediction and explanation
+                result = system.predict(soil, temp, hum)
+                
+                # Save the entry to CSV
+                pd.DataFrame([[datetime.now().strftime("%H:%M:%S"),
+                               soil, temp, hum, result['prediction']]],
+                             columns=columns).to_csv(csv_file, mode='a', header=False, index=False)
+                
+                # Display results
+                print(f"\nInput: {soil}%, {temp}°C, {hum}%")
+                print(f"Prediction: {result['prediction']} ({result['confidence']:.2%})")
+                key_factors = {feat: round(float(val), 4) for feat, val in 
+                               zip(result['explanation']['features'], result['explanation']['values'])}
+                print("Key Factors:", key_factors)
+            else:
+                # Optionally log if the received data is not valid
+                print("Invalid data received:", raw)
+                
+        except KeyboardInterrupt:
+            print("\nSystem shutdown initiated...")
+            break
+        except Exception as e:
+            print(f"Critical error: {str(e)}")
+    
+    ser.close()
 
 if __name__ == "__main__":
     main()
