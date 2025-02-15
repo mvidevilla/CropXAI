@@ -6,5 +6,7 @@ DHT22 Sensor connected to Digital Pin 2
 
 (Schematics uploaded later)
 
-Existing Issue:
-Low confidence level: 54% and below
+Uses Gradient Boosting to find patterns in data
+Uses SHAP to explain the deviation of input values from average values of training data
+
+Untested
