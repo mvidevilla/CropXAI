@@ -57,7 +57,7 @@ class CropXAI:
         input_data = np.array([[soil, temp, hum]])
         proba = self.model.predict_proba(input_data)[0]
         encoded_pred = np.argmax(proba)
-        calibrated_confidence = min(1.0, np.max(proba) * 1.25)
+        calibrated_confidence = min(1.0, np.max(proba))
         
         # Get SHAP values from KernelExplainer
         shap_values = self.explainer.shap_values(input_data)
